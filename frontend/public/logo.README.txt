@@ -1,0 +1,10 @@
+Place your company logo here as:
+
+logo.png
+
+Recommended:
+- square or near-square image
+- transparent background if possible
+- at least 300x300 px
+
+Once `logo.png` is added to this `public` folder, the form and receipt pages will show it automatically.
