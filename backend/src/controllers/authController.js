@@ -1,8 +1,8 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import Admin from "../models/admin.js";
 
 const getJwtSecret = () => process.env.JWT_SECRET || "change-this-jwt-secret";
+const isAdminAuthConfigured = () =>
+  Boolean(process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD);
 
 const createToken = (adminId) =>
   jwt.sign({ id: adminId }, getJwtSecret(), {
@@ -10,77 +10,47 @@ const createToken = (adminId) =>
   });
 
 export const getAuthStatus = async (req, res) => {
-  const adminCount = await Admin.countDocuments();
-
   res.json({
-    hasAdmin: adminCount > 0
+    hasAdmin: isAdminAuthConfigured(),
+    available: isAdminAuthConfigured()
   });
 };
 
 export const signupAdmin = async (req, res) => {
-  try {
-    const existingAdminCount = await Admin.countDocuments();
-
-    if (existingAdminCount > 0) {
-      return res.status(403).json({
-        error: "Master admin already exists. Please log in."
-      });
-    }
-
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        error: "Name, email, and password are required"
-      });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const admin = await Admin.create({
-      name,
-      email,
-      password: hashedPassword
-    });
-
-    res.status(201).json({
-      token: createToken(admin._id),
-      admin: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+  res.status(503).json({
+    error:
+      "Admin signup is unavailable until ADMIN_EMAIL and ADMIN_PASSWORD are configured on the backend."
+  });
 };
 
 export const loginAdmin = async (req, res) => {
   try {
+    if (!isAdminAuthConfigured()) {
+      return res.status(503).json({
+        error:
+          "Admin login is unavailable until ADMIN_EMAIL and ADMIN_PASSWORD are configured on the backend."
+      });
+    }
+
     const { email, password } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: "Email and password are required" });
     }
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-
-    if (!admin) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const isMatch = await bcrypt.compare(password, admin.password);
-
-    if (!isMatch) {
+    if (
+      email.toLowerCase() !== process.env.ADMIN_EMAIL.toLowerCase() ||
+      password !== process.env.ADMIN_PASSWORD
+    ) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
 
     res.json({
-      token: createToken(admin._id),
+      token: createToken(process.env.ADMIN_EMAIL),
       admin: {
-        id: admin._id,
-        name: admin.name,
-        email: admin.email
+        id: process.env.ADMIN_EMAIL,
+        name: "VK Group Admin",
+        email: process.env.ADMIN_EMAIL
       }
     });
   } catch (err) {

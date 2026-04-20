@@ -1,17 +1,8 @@
-import Counter from "../models/counter.js";
-
 export const generateReceiptId = async () => {
   const year = new Date().getFullYear();
-  const counter = await Counter.findByIdAndUpdate(
-    `receipt:${year}`,
-    { $inc: { seq: 1 } },
-    {
-      new: true,
-      upsert: true
-    }
-  );
-
-  const number = counter.seq.toString().padStart(4, "0");
+  const number = `${Date.now()}${Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, "0")}`.slice(-8);
 
   return `REC-${year}-${number}`;
 };
