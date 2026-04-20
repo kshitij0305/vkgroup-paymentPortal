@@ -1,9 +1,10 @@
 import mongoose from "mongoose";
 
 let cachedConnection = null;
+let connectionPromise = null;
 
 const connectDB = async () => {
-  if (cachedConnection) {
+  if (mongoose.connection.readyState === 1 && cachedConnection) {
     return cachedConnection;
   }
 
@@ -11,7 +12,22 @@ const connectDB = async () => {
     throw new Error("MONGO_URI is not configured");
   }
 
-  cachedConnection = await mongoose.connect(process.env.MONGO_URI);
+  if (!connectionPromise) {
+    connectionPromise = mongoose
+      .connect(process.env.MONGO_URI, {
+        bufferCommands: false
+      })
+      .then((connection) => {
+        cachedConnection = connection;
+        return connection;
+      })
+      .catch((error) => {
+        connectionPromise = null;
+        throw error;
+      });
+  }
+
+  cachedConnection = await connectionPromise;
   return cachedConnection;
 };
 
