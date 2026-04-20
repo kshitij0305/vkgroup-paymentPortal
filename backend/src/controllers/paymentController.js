@@ -1,7 +1,6 @@
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import Receipt from "../models/receipt.js"; // make sure filename matches exactly
-import { saveToExcel } from "../utils/excelWriter.js";
+import Receipt from "../models/receipt.js";
 
 // 🔹 Create Razorpay Order
 export const createOrder = async (req, res) => {
@@ -72,25 +71,6 @@ export const verifyPayment = async (req, res) => {
           message: "Receipt not found"
         });
       }
-
-      saveToExcel({
-        receiptId: updated.receiptId,
-        name: updated.name,
-        fatherName: updated.fatherName,
-        address: updated.address,
-        applyDate: updated.applyDate,
-        mobile1: updated.mobile1,
-        mobile2: updated.mobile2,
-        designation: updated.designation,
-        dob: updated.dob,
-        visitDate: updated.visitDate,
-        issueDate: updated.issueDate,
-        token: updated.token,
-        amount: updated.amount,
-        paymentId: updated.paymentId,
-        status: updated.status,
-        createdAt: updated.createdAt
-      });
 
       res.json({
         success: true,

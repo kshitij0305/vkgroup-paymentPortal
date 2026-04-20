@@ -1,6 +1,5 @@
-import fs from "fs";
 import Receipt from "../models/receipt.js";
-import { getExcelFilePath } from "../utils/excelWriter.js";
+import { buildReceiptsWorkbookBuffer } from "../utils/excelWriter.js";
 
 export const getReceipt = async (req, res) => {
   try {
@@ -17,12 +16,31 @@ export const getReceipt = async (req, res) => {
   }
 };
 
-export const downloadReceiptsExcel = (req, res) => {
-  const excelPath = getExcelFilePath();
+export const downloadReceiptsExcel = async (req, res) => {
+  try {
+    const receipts = await Receipt.find({ status: "paid" })
+      .sort({ createdAt: -1 })
+      .lean();
 
-  if (!fs.existsSync(excelPath)) {
-    return res.status(404).json({ error: "No Excel file has been generated yet" });
+    if (receipts.length === 0) {
+      return res.status(404).json({
+        error: "No paid receipts available for export yet"
+      });
+    }
+
+    const workbookBuffer = buildReceiptsWorkbookBuffer(receipts);
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="receipts.xlsx"'
+    );
+
+    res.send(workbookBuffer);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
-
-  res.download(excelPath, "receipts.xlsx");
 };
